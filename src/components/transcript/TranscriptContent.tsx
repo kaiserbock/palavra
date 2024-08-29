@@ -47,9 +47,32 @@ export function TranscriptContent({
   const { savedTerms } = useSavedTerms();
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
-  const handleSave = async () => {
-    if (!videoId || !videoUrl || !transcriptionName.trim() || !isEnhanced)
+  const checkTranscriptionExists = async () => {
+    if (!videoId) return false;
+    try {
+      const response = await fetch(`/api/transcriptions?videoId=${videoId}`);
+      if (!response.ok) return false;
+      const data = await response.json();
+      return data.exists;
+    } catch (error) {
+      console.error("Error checking transcription:", error);
+      return false;
+    }
+  };
+
+  const handleEnhance = async () => {
+    const exists = await checkTranscriptionExists();
+    if (exists) {
+      toast.error("You have already saved this transcription");
       return;
+    }
+    onEnhance();
+  };
+
+  const handleSave = async () => {
+    if (!videoId || !videoUrl || !transcriptionName.trim() || !isEnhanced) {
+      return;
+    }
 
     try {
       const response = await fetch("/api/transcriptions", {
@@ -69,7 +92,13 @@ export function TranscriptContent({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save transcription");
+        const errorData = await response.json();
+        if (response.status === 409) {
+          toast.error("You have already saved this transcription");
+        } else {
+          toast.error(errorData.error || "Failed to save transcription");
+        }
+        return;
       }
 
       toast.success("Transcription saved successfully!");
@@ -86,28 +115,25 @@ export function TranscriptContent({
     if (isLoadedTranscription) {
       try {
         const response = await fetch("/api/transcriptions", {
-          method: "POST",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             videoId,
-            url: videoUrl,
-            name: transcriptionName.trim(),
-            language: currentLanguage,
             enhancedTranscript: content,
-            terms: generateTermsList(content, savedTerms),
           }),
         });
 
         if (!response.ok) {
-          throw new Error("Failed to save changes");
+          const errorData = await response.json();
+          toast.error(errorData.error || "Failed to save changes");
+          throw new Error(errorData.error || "Failed to save changes");
         }
 
         toast.success("Changes saved successfully!");
       } catch (error) {
         console.error("Error saving changes:", error);
-        toast.error("Failed to save changes");
         throw error;
       }
     }
@@ -122,7 +148,7 @@ export function TranscriptContent({
         isLoaded={isLoadedTranscription}
         isEnhanced={isEnhanced}
         isEnhancing={isEnhancing}
-        onEnhance={onEnhance}
+        onEnhance={handleEnhance}
         onSave={() => setIsSaveDialogOpen(true)}
         onClose={onClose}
         onContentChange={onTranscriptChange}

@@ -23,7 +23,7 @@ export interface ITranscription {
 
 const transcriptionSchema = new mongoose.Schema<ITranscription>(
   {
-    videoId: { type: String, required: true, unique: true },
+    videoId: { type: String, required: true },
     url: { type: String, required: true },
     name: { type: String, required: true },
     title: { type: String },
@@ -50,5 +50,17 @@ const transcriptionSchema = new mongoose.Schema<ITranscription>(
   }
 );
 
-export default mongoose.models.Transcription ||
+// Drop existing indexes and create new compound index
+transcriptionSchema.index({ videoId: 1, userId: 1 }, { unique: true });
+
+// Ensure the model is not already defined
+const Transcription =
+  mongoose.models.Transcription ||
   mongoose.model<ITranscription>("Transcription", transcriptionSchema);
+
+// Drop the old index if it exists
+Transcription.collection.dropIndex("videoId_1").catch(() => {
+  // Ignore error if index doesn't exist
+});
+
+export default Transcription;
