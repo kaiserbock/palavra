@@ -1,13 +1,14 @@
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import clientPromise from "@/lib/mongodb";
 import { User as UserModel } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/mongodb";
-import { NextAuthOptions } from "next-auth";
+import { Adapter } from "next-auth/adapters";
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise) as Adapter,
   session: {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60,
@@ -57,7 +58,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user) {
-        session.user.id = token.id;
+        session.user.id = token.id as string;
       }
       return session;
     },

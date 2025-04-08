@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { Session } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { User } from "@/models/User";
 import { connectToDatabase } from "@/lib/mongodb";
 
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   console.log("Translation request received");
   try {
     // Get user's native language
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Authentication required" },
