@@ -1,18 +1,62 @@
 import { useState, useCallback, useEffect } from "react";
 import { isAndroid } from "@/lib/utils";
+import { WordCategory } from "@/contexts/SavedTermsContext";
 
-export function useTermSelection() {
+interface SelectedTerm {
+  text: string;
+  translation?: string;
+  category?: WordCategory;
+  position: { x: number; y: number };
+  placement: "top" | "bottom";
+}
+
+export function useTermSelection(onClearSelection?: () => void) {
+  const [selectedTerm, setSelectedTerm] = useState<SelectedTerm | null>(null);
   const [selectedText, setSelectedText] = useState<string>("");
   const [selectionStart, setSelectionStart] = useState<number>(0);
   const [selectionEnd, setSelectionEnd] = useState<number>(0);
   const [isSelecting, setIsSelecting] = useState(false);
 
+  // Helper function to handle the optional onClearSelection callback
+  const handleClearSelection = () => {
+    if (onClearSelection) {
+      onClearSelection();
+    }
+  };
+
+  const handleTermClick = useCallback(
+    (
+      event: React.MouseEvent,
+      text: string,
+      position: { x: number; y: number },
+      placement: "top" | "bottom",
+      translation?: string,
+      category?: WordCategory
+    ) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      handleClearSelection();
+
+      // Toggle selection off if clicking the same term
+      if (selectedTerm?.text === text) {
+        setSelectedTerm(null);
+        return;
+      }
+
+      setSelectedTerm({ text, translation, category, position, placement });
+    },
+    [selectedTerm, handleClearSelection]
+  );
+
   const clearSelection = useCallback(() => {
+    handleClearSelection();
+    setSelectedTerm(null);
     setSelectedText("");
     setSelectionStart(0);
     setSelectionEnd(0);
     setIsSelecting(false);
-  }, []);
+  }, [handleClearSelection]);
 
   const selectWord = useCallback((text: string, start: number, end: number) => {
     if (isAndroid()) {
@@ -189,6 +233,8 @@ export function useTermSelection() {
   }, []);
 
   return {
+    selectedTerm,
+    handleTermClick,
     selectedText,
     selectionStart,
     selectionEnd,
