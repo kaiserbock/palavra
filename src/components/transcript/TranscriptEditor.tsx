@@ -22,7 +22,7 @@ export function TranscriptEditor({
   onEditChange,
 }: TranscriptEditorProps) {
   return (
-    <ScrollArea className="h-full bg-gray-50">
+    <ScrollArea className="h-full bg-gray-50 overflow-y-auto touch-auto">
       <div className="p-6">
         {isEditing ? (
           <Textarea

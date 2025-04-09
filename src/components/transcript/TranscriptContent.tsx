@@ -132,7 +132,7 @@ export function TranscriptContent({
 
   return (
     <>
-      <Card className="h-full flex flex-col border-0 sm:border gap-2 py-0 md:py-4">
+      <Card className="h-full flex flex-col border-0 sm:border gap-2 py-0 md:py-4 overflow-hidden">
         <TranscriptHeader
           transcriptionName={transcriptionName}
           isLoadedTranscription={isLoadedTranscription}

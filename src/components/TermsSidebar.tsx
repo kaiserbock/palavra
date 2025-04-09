@@ -125,7 +125,7 @@ export function Sidebar({ className }: SidebarProps) {
         </CardHeader>
 
         <CardContent className="p-0 flex-1 min-h-0">
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full overflow-y-auto touch-auto">
             <div className="px-4 sm:px-6 py-4">
               {filteredTerms.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
