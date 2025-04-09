@@ -15,8 +15,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
+    // Clean the URL
+    const cleanUrl = url.trim().replace(/^@/, "");
+
     // Extract video ID from URL
-    const videoId = extractVideoId(url);
+    const videoId = extractVideoId(cleanUrl);
     if (!videoId) {
       return NextResponse.json(
         { error: "Invalid YouTube URL" },
@@ -36,6 +39,21 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       if (error instanceof Error) {
+        // Check for specific error messages from youtube-transcript
+        if (error.message.includes("Could not find automatic captions")) {
+          return NextResponse.json(
+            { error: "This video does not have any captions available." },
+            { status: 400 }
+          );
+        }
+
+        if (error.message.includes("Video is unavailable")) {
+          return NextResponse.json(
+            { error: "This video is unavailable or private." },
+            { status: 400 }
+          );
+        }
+
         const availableLanguagesMatch = error.message.match(
           /Available languages: (.+?)(?:\n|$)/
         );
@@ -51,13 +69,19 @@ export async function POST(request: Request) {
             defaultLanguage: availableLanguages[0],
           });
         }
+
+        // If we get here, it's an unknown error from youtube-transcript
+        return NextResponse.json(
+          { error: `Failed to fetch captions: ${error.message}` },
+          { status: 400 }
+        );
       }
       throw error;
     }
   } catch (error) {
     console.error("Error checking available languages:", error);
     return NextResponse.json(
-      { error: "Failed to check available languages" },
+      { error: "Failed to check available languages. Please try again later." },
       { status: 500 }
     );
   }

@@ -69,7 +69,9 @@ export function TranscriptForm({
         console.error("Error checking languages:", error);
         setLanguage(null);
         setError(
-          "Could not get video language. Please check if the URL is correct."
+          error instanceof Error
+            ? error.message
+            : "Could not get video language. Please check if the URL is correct."
         );
       } finally {
         setIsCheckingLanguages(false);
