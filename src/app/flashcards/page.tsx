@@ -202,9 +202,12 @@ export default function FlashcardsPage() {
                   <p className="text-lg text-muted-foreground">
                     No flashcards in this group. Add some terms first!
                   </p>
-                  <Button variant="outline" onClick={resetCards}>
-                    <RotateCw className="h-4 w-4 mr-2" />
-                    Reset
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddTermsOpen(true)}
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Terms
                   </Button>
                 </div>
               ) : (
@@ -238,7 +241,10 @@ export default function FlashcardsPage() {
                     </div>
                   </div>
 
-                  <Card className="aspect-[3/2] flex flex-col p-8 select-none">
+                  <Card
+                    className="aspect-[3/2] flex flex-col p-8 select-none cursor-pointer"
+                    onClick={() => setIsFlipped(!isFlipped)}
+                  >
                     <div className="flex-1 flex items-center justify-center">
                       <div className="space-y-4 text-center">
                         {validTerms[currentIndex].category && (
@@ -268,13 +274,6 @@ export default function FlashcardsPage() {
                       disabled={currentIndex === 0}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setIsFlipped(!isFlipped)}
-                    >
-                      Flip
                     </Button>
                     <Button
                       variant="outline"

@@ -9,16 +9,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSavedTerms } from "@/contexts/SavedTermsContext";
-import { LANGUAGE_NAMES } from "@/constants/languages";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useUser } from "@/hooks/useUser";
 
 interface CreateTermDialogProps {
   open: boolean;
@@ -30,12 +23,14 @@ export function CreateTermDialog({
   onOpenChange,
 }: CreateTermDialogProps) {
   const { addTerm, hasTerm } = useSavedTerms();
+  const { user } = useUser();
   const [text, setText] = useState("");
-  const [language, setLanguage] = useState("en");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleCreate = async () => {
     if (!text.trim()) return;
+
+    const language = user?.learningLanguage || "en";
 
     // Check if term already exists
     if (hasTerm(text, language)) {
@@ -81,7 +76,6 @@ export function CreateTermDialog({
 
       toast.success("Term saved successfully");
       setText("");
-      setLanguage("en");
       onOpenChange(false);
     } catch (error) {
       console.error("Error saving term:", error);
@@ -103,18 +97,6 @@ export function CreateTermDialog({
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(LANGUAGE_NAMES).map(([code, name]) => (
-                <SelectItem key={code} value={code}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

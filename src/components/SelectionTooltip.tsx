@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Type, Loader2 } from "lucide-react";
 import { useSavedTerms } from "@/contexts/SavedTermsContext";
 import { toast } from "sonner";
+import { useUser } from "@/hooks/useUser";
 
 interface SelectionTooltipProps {
   selection: {
@@ -12,7 +13,7 @@ interface SelectionTooltipProps {
     range: Range | null;
     position: { start: number; end: number } | null;
   };
-  language: string;
+  language?: string;
   onSelectionChange?: (
     selection: {
       text: string;
@@ -28,6 +29,7 @@ export function SelectionTooltip({
   onSelectionChange,
 }: SelectionTooltipProps) {
   const { addTerm, hasTerm } = useSavedTerms();
+  const { user } = useUser();
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
     null
   );
@@ -61,8 +63,10 @@ export function SelectionTooltip({
     if (!isMounted || !selection.text || !selection.position || isSaving)
       return;
 
+    const termLanguage = language || user?.learningLanguage || "en";
+
     // Check if term already exists
-    if (hasTerm(selection.text, language)) {
+    if (hasTerm(selection.text, termLanguage)) {
       toast.error("Term already exists");
       return;
     }
@@ -73,7 +77,7 @@ export function SelectionTooltip({
     try {
       // If the term is not in English, get its translation first
       let translation: string | undefined;
-      if (language !== "en") {
+      if (termLanguage !== "en") {
         const response = await fetch("/api/translate", {
           method: "POST",
           headers: {
@@ -81,7 +85,7 @@ export function SelectionTooltip({
           },
           body: JSON.stringify({
             text: selection.text,
-            fromLanguage: language,
+            fromLanguage: termLanguage,
           }),
         });
 
@@ -94,7 +98,7 @@ export function SelectionTooltip({
       }
 
       // Save the term with its translation
-      await addTerm(selection.text, language, translation);
+      await addTerm(selection.text, termLanguage, translation);
 
       toast.success("Term saved successfully");
 
@@ -113,6 +117,7 @@ export function SelectionTooltip({
   }, [
     selection,
     language,
+    user?.learningLanguage,
     addTerm,
     hasTerm,
     isMounted,
