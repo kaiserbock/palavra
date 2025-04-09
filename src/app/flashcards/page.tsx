@@ -14,6 +14,7 @@ import {
   Plus,
   PlusCircle,
   X,
+  FlipHorizontal,
 } from "lucide-react";
 import { FlashcardGroupCard } from "@/components/flashcards/FlashcardGroupCard";
 import { AddTermsToGroup } from "@/components/flashcards/AddTermsToGroup";
@@ -43,6 +44,7 @@ export default function FlashcardsPage() {
   const [isAddTermsOpen, setIsAddTermsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isReversed, setIsReversed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -89,6 +91,11 @@ export default function FlashcardsPage() {
 
   const resetCards = () => {
     setCurrentIndex(0);
+    setIsFlipped(false);
+  };
+
+  const toggleReversed = () => {
+    setIsReversed(!isReversed);
     setIsFlipped(false);
   };
 
@@ -238,6 +245,16 @@ export default function FlashcardsPage() {
                       >
                         <RotateCw className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={toggleReversed}
+                        className={cn(
+                          isReversed && "bg-primary/10 text-primary"
+                        )}
+                      >
+                        <FlipHorizontal className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 
@@ -259,6 +276,10 @@ export default function FlashcardsPage() {
                           )}
                         >
                           {isFlipped
+                            ? isReversed
+                              ? validTerms[currentIndex].text
+                              : validTerms[currentIndex].translation
+                            : isReversed
                             ? validTerms[currentIndex].translation
                             : validTerms[currentIndex].text}
                         </div>
