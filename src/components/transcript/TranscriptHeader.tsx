@@ -1,6 +1,7 @@
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wand2, Loader2, Save, X, Edit, Check } from "lucide-react";
+import { TermsDrawer } from "./TermsDrawer";
 
 interface TranscriptHeaderProps {
   transcriptionName: string;
@@ -8,6 +9,7 @@ interface TranscriptHeaderProps {
   isEnhanced: boolean;
   isEnhancing: boolean;
   isEditing: boolean;
+  transcript: string;
   onEdit: () => void;
   onEnhance: () => void;
   onEditSave: () => void;
@@ -22,6 +24,7 @@ export function TranscriptHeader({
   isEnhanced,
   isEnhancing,
   isEditing,
+  transcript,
   onEdit,
   onEnhance,
   onEditSave,
@@ -30,41 +33,31 @@ export function TranscriptHeader({
   onClose,
 }: TranscriptHeaderProps) {
   return (
-    <CardHeader className="md:pb-4 px-6">
-      <div className="flex items-center justify-between">
-        <CardTitle className="text-lg">
-          {transcriptionName || "Untitled Transcript"}
-        </CardTitle>
-        <div className="flex items-center gap-2">
+    <CardHeader className="md:pb-4 px-6 pt-6">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-end gap-2">
           {!isLoadedTranscription && !isEnhanced && !isEditing && (
             <>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onEdit}
                 disabled={isEnhancing}
-                className="h-8"
+                className="h-8 w-8"
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
+                <Edit className="h-4 w-4" />
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onEnhance}
                 disabled={isEnhancing}
-                className="h-8"
+                className="h-8 w-8"
               >
                 {isEnhancing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Enhancing...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Enhance
-                  </>
+                  <Wand2 className="h-4 w-4" />
                 )}
               </Button>
             </>
@@ -72,60 +65,56 @@ export function TranscriptHeader({
           {isEditing && (
             <>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onEditCancel}
-                className="h-8"
+                className="h-8 w-8"
               >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
+                <X className="h-4 w-4" />
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onEditSave}
-                className="h-8"
+                className="h-8 w-8"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Save Changes
+                <Check className="h-4 w-4" />
               </Button>
             </>
           )}
           {!isLoadedTranscription && isEnhanced && !isEditing && (
             <>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onEdit}
                 disabled={isEnhancing}
-                className="h-8"
+                className="h-8 w-8"
               >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
+                <Edit className="h-4 w-4" />
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="ghost"
+                size="icon"
                 onClick={onSave}
-                className="h-8"
+                className="h-8 w-8"
               >
-                <Save className="h-4 w-4 mr-2" />
-                Save
+                <Save className="h-4 w-4" />
               </Button>
             </>
           )}
           {isLoadedTranscription && !isEditing && (
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
+              size="icon"
               onClick={onEdit}
               disabled={isEnhancing}
-              className="h-8"
+              className="h-8 w-8"
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <Edit className="h-4 w-4" />
             </Button>
           )}
+          <TermsDrawer transcript={transcript} />
           <Button
             variant="ghost"
             size="icon"
@@ -135,6 +124,9 @@ export function TranscriptHeader({
             <X className="h-4 w-4" />
           </Button>
         </div>
+        <CardTitle className="text-lg">
+          {transcriptionName || "Untitled Transcript"}
+        </CardTitle>
       </div>
     </CardHeader>
   );
