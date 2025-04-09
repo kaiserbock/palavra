@@ -20,6 +20,9 @@ export async function POST(request: Request) {
 
     // Extract video ID from URL
     const videoId = extractVideoId(cleanUrl);
+
+    console.log("videoId", videoId);
+
     if (!videoId) {
       return NextResponse.json(
         { error: "Invalid YouTube URL" },
@@ -40,6 +43,16 @@ export async function POST(request: Request) {
     } catch (error) {
       if (error instanceof Error) {
         // Check for specific error messages from youtube-transcript
+        if (error.message.includes("Transcript is disabled")) {
+          return NextResponse.json(
+            {
+              error:
+                "Transcripts are not available for this video. This might be due to:\n1. The video owner has disabled transcripts\n2. The video is age-restricted\n3. YouTube's regional restrictions",
+            },
+            { status: 400 }
+          );
+        }
+
         if (error.message.includes("Could not find automatic captions")) {
           return NextResponse.json(
             { error: "This video does not have any captions available." },
@@ -70,9 +83,19 @@ export async function POST(request: Request) {
           });
         }
 
+        // Log the full error for debugging in production
+        console.error("YouTube Transcript Error:", {
+          message: error.message,
+          videoId,
+          stack: error.stack,
+        });
+
         // If we get here, it's an unknown error from youtube-transcript
         return NextResponse.json(
-          { error: `Failed to fetch captions: ${error.message}` },
+          {
+            error:
+              "Unable to access video transcripts. If this video has captions and works locally, this might be due to YouTube's regional restrictions or rate limiting in the deployment environment.",
+          },
           { status: 400 }
         );
       }
