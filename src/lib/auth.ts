@@ -1,11 +1,15 @@
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import clientPromise from "@/lib/mongodb";
+import { clientPromise } from "@/lib/mongodb";
 import { User as UserModel } from "@/models/User";
 import bcrypt from "bcryptjs";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Adapter } from "next-auth/adapters";
+
+if (!clientPromise) {
+  throw new Error("MongoDB client promise is not initialized");
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise) as Adapter,

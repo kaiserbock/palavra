@@ -1,9 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface FlashcardList {
-  id: string;
+  _id: string;
   name: string;
   termIds: string[];
 }
@@ -11,11 +19,12 @@ interface FlashcardList {
 interface FlashcardListsContextType {
   lists: FlashcardList[];
   currentListId: string | null;
-  createList: (name: string) => void;
-  deleteList: (id: string) => void;
-  addTermToList: (listId: string, termId: string) => void;
-  removeTermFromList: (listId: string, termId: string) => void;
+  createList: (name: string) => Promise<void>;
+  deleteList: (id: string) => Promise<void>;
+  addTermToList: (listId: string, termId: string) => Promise<void>;
+  removeTermFromList: (listId: string, termId: string) => Promise<void>;
   setCurrentList: (id: string | null) => void;
+  isLoading: boolean;
 }
 
 const FlashcardListsContext = createContext<
@@ -23,68 +32,126 @@ const FlashcardListsContext = createContext<
 >(undefined);
 
 export function FlashcardListsProvider({ children }: { children: ReactNode }) {
-  const [lists, setLists] = useState<FlashcardList[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("flashcardLists");
-      return saved ? JSON.parse(saved) : [];
+  const { data: session } = useSession();
+  const [lists, setLists] = useState<FlashcardList[]>([]);
+  const [currentListId, setCurrentListId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchLists();
     }
-    return [];
-  });
-  const [currentListId, setCurrentListId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("currentFlashcardListId");
-    }
-    return null;
-  });
+  }, [session?.user?.id]);
 
-  const saveLists = (newLists: FlashcardList[]) => {
-    setLists(newLists);
-    localStorage.setItem("flashcardLists", JSON.stringify(newLists));
-  };
-
-  const createList = (name: string) => {
-    const newList: FlashcardList = {
-      id: Date.now().toString(),
-      name,
-      termIds: [],
-    };
-    saveLists([...lists, newList]);
-  };
-
-  const deleteList = (id: string) => {
-    const newLists = lists.filter((list) => list.id !== id);
-    saveLists(newLists);
-    if (currentListId === id) {
-      setCurrentListId(null);
-      localStorage.removeItem("currentFlashcardListId");
+  const fetchLists = async () => {
+    try {
+      const response = await fetch("/api/flashcard-lists");
+      if (!response.ok) {
+        throw new Error("Failed to fetch flashcard lists");
+      }
+      const data = await response.json();
+      setLists(data);
+    } catch (error) {
+      console.error("Error fetching flashcard lists:", error);
+      toast.error("Failed to load flashcard lists");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const addTermToList = (listId: string, termId: string) => {
-    const newLists = lists.map((list) =>
-      list.id === listId
-        ? { ...list, termIds: [...list.termIds, termId] }
-        : list
-    );
-    saveLists(newLists);
+  const createList = async (name: string) => {
+    try {
+      const response = await fetch("/api/flashcard-lists", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create flashcard list");
+      }
+
+      const newList = await response.json();
+      setLists((prevLists) => [...prevLists, newList]);
+      toast.success("Flashcard list created successfully");
+    } catch (error) {
+      console.error("Error creating flashcard list:", error);
+      toast.error("Failed to create flashcard list");
+    }
   };
 
-  const removeTermFromList = (listId: string, termId: string) => {
-    const newLists = lists.map((list) =>
-      list.id === listId
-        ? { ...list, termIds: list.termIds.filter((id) => id !== termId) }
-        : list
-    );
-    saveLists(newLists);
+  const deleteList = async (id: string) => {
+    try {
+      const response = await fetch(`/api/flashcard-lists?listId=${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete flashcard list");
+      }
+
+      setLists((prevLists) => prevLists.filter((list) => list._id !== id));
+      if (currentListId === id) {
+        setCurrentListId(null);
+      }
+      toast.success("Flashcard list deleted successfully");
+    } catch (error) {
+      console.error("Error deleting flashcard list:", error);
+      toast.error("Failed to delete flashcard list");
+    }
+  };
+
+  const addTermToList = async (listId: string, termId: string) => {
+    try {
+      const response = await fetch("/api/flashcard-lists/terms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ listId, termId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add term to flashcard list");
+      }
+
+      const updatedList = await response.json();
+      setLists((prevLists) =>
+        prevLists.map((list) => (list._id === listId ? updatedList : list))
+      );
+    } catch (error) {
+      console.error("Error adding term to flashcard list:", error);
+      toast.error("Failed to add term to flashcard list");
+    }
+  };
+
+  const removeTermFromList = async (listId: string, termId: string) => {
+    try {
+      const response = await fetch(
+        `/api/flashcard-lists/terms?listId=${listId}&termId=${termId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to remove term from flashcard list");
+      }
+
+      const updatedList = await response.json();
+      setLists((prevLists) =>
+        prevLists.map((list) => (list._id === listId ? updatedList : list))
+      );
+    } catch (error) {
+      console.error("Error removing term from flashcard list:", error);
+      toast.error("Failed to remove term from flashcard list");
+    }
   };
 
   const setCurrentList = (id: string | null) => {
     setCurrentListId(id);
-    if (id) {
-      localStorage.setItem("currentFlashcardListId", id);
-    } else {
-      localStorage.removeItem("currentFlashcardListId");
-    }
   };
 
   return (
@@ -97,6 +164,7 @@ export function FlashcardListsProvider({ children }: { children: ReactNode }) {
         addTermToList,
         removeTermFromList,
         setCurrentList,
+        isLoading,
       }}
     >
       {children}

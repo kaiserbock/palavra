@@ -13,7 +13,7 @@ export function FlashcardGroupCard({
   onRemove,
 }: FlashcardGroupCardProps) {
   const { lists } = useFlashcardLists();
-  const list = lists.find((l) => l.id === listId);
+  const list = lists.find((l) => l._id === listId);
 
   if (!list) return null;
 

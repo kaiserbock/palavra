@@ -22,7 +22,7 @@ export function AddTermsToGroup({ listId }: AddTermsToGroupProps) {
     setMounted(true);
   }, []);
 
-  const currentList = lists.find((list) => list.id === listId);
+  const currentList = lists.find((list) => list._id === listId);
   if (!currentList || !mounted) return null;
 
   const filteredTerms = savedTerms.filter((term) => {

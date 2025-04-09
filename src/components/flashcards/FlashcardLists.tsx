@@ -66,23 +66,23 @@ export function FlashcardLists() {
       <div className="space-y-2">
         {lists.map((list) => (
           <Card
-            key={list.id}
+            key={list._id}
             className={cn(
               "p-4 flex items-center justify-between",
-              currentListId === list.id && "border-primary"
+              currentListId === list._id && "border-primary"
             )}
           >
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setCurrentList(list.id)}
+                onClick={() => setCurrentList(list._id)}
                 className={cn(
                   "flex-1 justify-start",
-                  currentListId === list.id && "text-primary"
+                  currentListId === list._id && "text-primary"
                 )}
               >
-                {currentListId === list.id && (
+                {currentListId === list._id && (
                   <Check className="h-4 w-4 mr-2" />
                 )}
                 {list.name}
@@ -91,7 +91,7 @@ export function FlashcardLists() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => deleteList(list.id)}
+              onClick={() => deleteList(list._id)}
               className="text-destructive hover:text-destructive"
             >
               <Trash2 className="h-4 w-4" />

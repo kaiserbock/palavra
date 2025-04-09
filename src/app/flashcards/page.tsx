@@ -58,7 +58,7 @@ export default function FlashcardsPage() {
   };
 
   // Get terms for current list
-  const currentList = lists.find((list) => list.id === currentListId);
+  const currentList = lists.find((list) => list._id === currentListId);
   const listTerms = currentList
     ? savedTerms.filter((term) =>
         currentList.termIds.includes(`${term.text}-${term.language}`)
@@ -118,8 +118,8 @@ export default function FlashcardsPage() {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Plus className="h-4 w-4" />
+                <Button variant="ghost" size="icon">
+                  <Plus className="h-4 w-4 mr-2" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -149,10 +149,10 @@ export default function FlashcardsPage() {
             <div className="space-y-2">
               {lists.map((list) => (
                 <FlashcardGroupCard
-                  key={list.id}
-                  listId={list.id}
+                  key={list._id}
+                  listId={list._id}
                   onGroupClick={handleGroupClick}
-                  onRemove={() => deleteList(list.id)}
+                  onRemove={() => deleteList(list._id)}
                 />
               ))}
               {lists.length === 0 && (
@@ -186,22 +186,13 @@ export default function FlashcardsPage() {
                 {currentList ? currentList.name : "Flashcards"}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsAddTermsOpen(true)}
-              >
-                <PlusCircle className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsSliderOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSliderOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
@@ -223,6 +214,13 @@ export default function FlashcardsPage() {
                       Card {currentIndex + 1} of {validTerms.length}
                     </div>
                     <div className="space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setIsAddTermsOpen(true)}
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="icon"
