@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type Term = {
+export type Term = {
   text: string;
   translation?: string;
   position?: { start: number; end: number };

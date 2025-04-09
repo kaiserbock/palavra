@@ -6,7 +6,15 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000,
+  maxPoolSize: 10,
+  minPoolSize: 5,
+  retryWrites: true,
+  retryReads: true,
+};
 
 let client;
 let clientPromise: Promise<MongoClient>;
@@ -37,7 +45,15 @@ export async function connectToDatabase() {
     }
 
     console.log("Connecting to MongoDB...");
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+      minPoolSize: 5,
+      retryWrites: true,
+      retryReads: true,
+    });
     console.log("Successfully connected to MongoDB");
   } catch (error) {
     console.error("MongoDB connection error:", error);
