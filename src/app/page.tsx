@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "sonner";
-import { Sidebar } from "@/components/TermsSidebar";
-import { SavedTermsProvider } from "@/contexts/SavedTermsContext";
-import { SavedTranscriptions } from "@/components/TranscriptionList";
+import {
+  SavedTermsProvider,
+  useSavedTerms,
+} from "@/contexts/SavedTermsContext";
 import { TranscriptContent } from "@/components/transcript/TranscriptContent";
 import { TranscriptForm } from "@/components/transcript/TranscriptForm";
 import { useTranscript } from "@/hooks/useTranscript";
@@ -21,6 +22,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { useUser } from "@/hooks/useUser";
+import { LANGUAGE_NAMES } from "@/constants/languages";
 
 interface Transcription {
   videoId: string;
@@ -138,10 +143,11 @@ function HomeContent() {
   const [transcriptionName, setTranscriptionName] = useState("");
   const [isLoadedTranscription, setIsLoadedTranscription] = useState(false);
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
+  const { user, isLoading } = useUser();
 
   const {
     transcript,
-    isLoading,
+    isLoading: transcriptLoading,
     isEnhancing,
     currentLanguage,
     isEnhanced,
@@ -149,11 +155,10 @@ function HomeContent() {
     enhanceTranscript,
     resetTranscript,
     setTranscript,
-    setCurrentLanguage,
-    setIsEnhanced,
   } = useTranscript();
 
   const { videoId, videoUrl, setVideo, resetVideo } = useVideo();
+  const { savedTerms } = useSavedTerms();
 
   const handleSubmit = async (url: string, language: string) => {
     if (!setVideo(url)) return;
@@ -166,34 +171,15 @@ function HomeContent() {
 
   const handleSave = () => {
     setShowNewTranscriptionForm(false);
-    // Reset all transcript-related state
     resetTranscript();
     resetVideo();
     setIsLoadedTranscription(false);
     setTranscriptionName("");
-    // Force a refresh of the transcriptions list
     const event = new Event("transcriptionSaved");
     window.dispatchEvent(event);
   };
 
-  const handleTranscriptionSelect = (transcription: Transcription) => {
-    setVideo(transcription.url);
-    setTranscript(transcription.enhancedTranscript || transcription.transcript);
-    setCurrentLanguage(transcription.language);
-    setIsEnhanced(!!transcription.enhancedTranscript);
-    setIsLoadedTranscription(true);
-    setTranscriptionName(transcription.name);
-  };
-
-  const handleNewTranscription = () => {
-    setShowNewTranscriptionForm(true);
-    resetTranscript();
-    resetVideo();
-    setIsLoadedTranscription(false);
-  };
-
   const handleTranscriptionDelete = (deletedTranscription: Transcription) => {
-    // If the deleted transcription is currently open, close it
     if (videoId === deletedTranscription.videoId) {
       resetTranscript();
       resetVideo();
@@ -202,64 +188,240 @@ function HomeContent() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex flex-col min-h-screen">
       <Header onOpenTerms={() => setIsTermsDialogOpen(true)} />
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="h-full flex flex-col lg:flex-row lg:gap-8">
-            <main className="flex-1 min-w-0 order-2 lg:order-1 overflow-hidden flex flex-col">
-              {showNewTranscriptionForm && !transcript ? (
+      <main className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">
+              Welcome back, {user?.name}!
+            </h1>
+            <p className="text-muted-foreground">
+              Continue learning{" "}
+              {isLoading
+                ? "..."
+                : user?.learningLanguage
+                ? LANGUAGE_NAMES[user.learningLanguage]
+                : "your target language"}
+            </p>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Saved Terms</h3>
+                <BookMarked className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-3xl font-bold mb-2">{savedTerms.length}</div>
+              <p className="text-sm text-muted-foreground">Total saved terms</p>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Transcriptions</h3>
+                <ScrollText className="h-5 w-5 text-green-500" />
+              </div>
+              <div className="text-3xl font-bold mb-2">
+                <SavedTranscriptionsCount />
+              </div>
+              <p className="text-sm text-muted-foreground">Videos processed</p>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+              <div className="space-y-4">
+                <Button
+                  onClick={() => setShowNewTranscriptionForm(true)}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <Youtube className="h-4 w-4 mr-2 text-red-500" />
+                  Process New Video
+                </Button>
+                <Button
+                  onClick={() => setIsTermsDialogOpen(true)}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <BookMarked className="h-4 w-4 mr-2 text-primary" />
+                  View Saved Terms
+                </Button>
+                <Link href="/flashcards" className="block">
+                  <Button className="w-full justify-start" variant="outline">
+                    <ScrollText className="h-4 w-4 mr-2 text-green-500" />
+                    Practice Flashcards
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+              <div className="space-y-4">
+                <RecentActivity />
+              </div>
+            </Card>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="space-y-6">
+            {showNewTranscriptionForm && !transcript ? (
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Process New Video
+                </h3>
                 <TranscriptForm
                   onSubmit={handleSubmit}
                   onCancel={() => setShowNewTranscriptionForm(false)}
-                  isLoading={isLoading}
+                  isLoading={transcriptLoading}
                   hasTranscript={!!transcript}
                 />
-              ) : transcript ? (
-                <div className="flex-1 min-h-0">
-                  <TranscriptContent
-                    transcript={transcript}
-                    videoId={videoId}
-                    videoUrl={videoUrl}
-                    currentLanguage={currentLanguage}
-                    isEnhanced={isEnhanced}
-                    isEnhancing={isEnhancing}
-                    isLoadedTranscription={isLoadedTranscription}
-                    transcriptionName={transcriptionName}
-                    onClose={() => {
-                      resetTranscript();
-                      resetVideo();
-                      setIsLoadedTranscription(false);
-                      setShowNewTranscriptionForm(false);
-                    }}
-                    onEnhance={enhanceTranscript}
-                    onSave={handleSave}
-                    onTranscriptionNameChange={setTranscriptionName}
-                    onTranscriptChange={setTranscript}
-                  />
-                </div>
-              ) : (
-                <div className="mb-6 sm:mb-8 flex-shrink-0">
-                  <SavedTranscriptions
-                    onSelect={handleTranscriptionSelect}
-                    onNewTranscription={handleNewTranscription}
-                    onDelete={handleTranscriptionDelete}
-                  />
-                </div>
-              )}
-            </main>
-
-            <aside className="hidden lg:block w-[320px] order-2 overflow-hidden flex-shrink-0">
-              <Sidebar />
-            </aside>
+              </Card>
+            ) : transcript ? (
+              <Card className="overflow-hidden">
+                <TranscriptContent
+                  transcript={transcript}
+                  videoId={videoId}
+                  videoUrl={videoUrl}
+                  currentLanguage={currentLanguage}
+                  isEnhanced={isEnhanced}
+                  isEnhancing={isEnhancing}
+                  isLoadedTranscription={isLoadedTranscription}
+                  transcriptionName={transcriptionName}
+                  onClose={() => {
+                    resetTranscript();
+                    resetVideo();
+                    setIsLoadedTranscription(false);
+                    setShowNewTranscriptionForm(false);
+                  }}
+                  onEnhance={enhanceTranscript}
+                  onSave={handleSave}
+                  onTranscriptionNameChange={setTranscriptionName}
+                  onTranscriptChange={setTranscript}
+                  onDelete={handleTranscriptionDelete}
+                />
+              </Card>
+            ) : null}
           </div>
         </div>
-      </div>
+      </main>
       <TermsDialog
         open={isTermsDialogOpen}
         onOpenChange={setIsTermsDialogOpen}
       />
       <Toaster />
+    </div>
+  );
+}
+
+// Helper component to show transcription count
+function SavedTranscriptionsCount() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const response = await fetch("/api/transcriptions");
+        if (response.ok) {
+          const data = await response.json();
+          setCount(Array.isArray(data) ? data.length : 0);
+        }
+      } catch (error) {
+        console.error("Error fetching transcription count:", error);
+      }
+    };
+    fetchCount();
+  }, []);
+
+  return count;
+}
+
+// Helper component to show recent activity
+function RecentActivity() {
+  const [activities, setActivities] = useState<
+    Array<{ type: string; title: string; date: string }>
+  >([]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const [termsResponse, transcriptionsResponse] = await Promise.all([
+          fetch("/api/terms"),
+          fetch("/api/transcriptions"),
+        ]);
+
+        const terms = await termsResponse.json();
+        const transcriptions = await transcriptionsResponse.json();
+
+        // Combine and sort activities
+        const allActivities = [
+          ...terms.map((term: { text: string; createdAt: string }) => ({
+            type: "term",
+            title: term.text,
+            date: new Date(term.createdAt),
+          })),
+          ...transcriptions.map(
+            (trans: { name: string; createdAt: string }) => ({
+              type: "transcription",
+              title: trans.name,
+              date: new Date(trans.createdAt),
+            })
+          ),
+        ]
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 5)
+          .map((activity) => ({
+            ...activity,
+            title:
+              activity.title.length > 30
+                ? activity.title.substring(0, 30) + "..."
+                : activity.title,
+            date: new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+            }).format(activity.date),
+          }));
+
+        setActivities(allActivities);
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+      }
+    };
+    fetchActivities();
+  }, []);
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-4">
+        No recent activity
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {activities.map((activity, index) => (
+        <div key={index} className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {activity.type === "term" ? (
+              <BookMarked className="h-4 w-4 text-primary flex-shrink-0" />
+            ) : (
+              <ScrollText className="h-4 w-4 text-green-500 flex-shrink-0" />
+            )}
+            <span className="text-sm truncate" title={activity.title}>
+              {activity.title}
+            </span>
+          </div>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {activity.date}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
