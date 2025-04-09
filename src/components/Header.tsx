@@ -1,5 +1,4 @@
 import {
-  Languages,
   Youtube,
   BookMarked,
   ScrollText,
@@ -10,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useSavedTerms } from "@/contexts/SavedTermsContext";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { AuthButton } from "@/components/auth/AuthButton";
 import {
   Sheet,
@@ -22,12 +20,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { VisuallyHidden } from "@/components/ui/visually-hidden";
 
-interface HeaderProps {
-  onOpenTerms?: () => void;
-}
-
-function MobileMenu({ onOpenTerms }: { onOpenTerms?: () => void }) {
-  const pathname = usePathname();
+function MobileMenu() {
   const { data: session } = useSession();
   const { savedTerms } = useSavedTerms();
   const savedTermsCount = savedTerms.length;
@@ -109,10 +102,9 @@ function MobileMenu({ onOpenTerms }: { onOpenTerms?: () => void }) {
   );
 }
 
-function DesktopNav({ onOpenTerms }: { onOpenTerms?: () => void }) {
+function DesktopNav() {
   const { savedTerms } = useSavedTerms();
   const savedTermsCount = savedTerms.length;
-  const pathname = usePathname();
   const { data: session } = useSession();
 
   if (!session) return <AuthButton />;
@@ -167,7 +159,7 @@ function DesktopNav({ onOpenTerms }: { onOpenTerms?: () => void }) {
   );
 }
 
-export function Header({ onOpenTerms }: HeaderProps) {
+export function Header() {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
@@ -185,8 +177,8 @@ export function Header({ onOpenTerms }: HeaderProps) {
           </Link>
         </div>
         <div className="flex items-center">
-          <DesktopNav onOpenTerms={onOpenTerms} />
-          <MobileMenu onOpenTerms={onOpenTerms} />
+          <DesktopNav />
+          <MobileMenu />
         </div>
       </div>
     </header>

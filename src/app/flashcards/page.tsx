@@ -33,7 +33,9 @@ export default function FlashcardsPage() {
   // Get terms for current list
   const currentList = lists.find((list) => list.id === currentListId);
   const listTerms = currentList
-    ? savedTerms.filter((term) => currentList.termIds.includes(term.id))
+    ? savedTerms.filter((term) =>
+        currentList.termIds.includes(`${term.text}-${term.language}`)
+      )
     : savedTerms;
 
   // Filter out terms without translations

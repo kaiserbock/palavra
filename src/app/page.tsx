@@ -27,15 +27,6 @@ import Link from "next/link";
 import { useUser } from "@/hooks/useUser";
 import { LANGUAGE_NAMES } from "@/constants/languages";
 
-interface Transcription {
-  videoId: string;
-  url: string;
-  name: string;
-  language: string;
-  transcript: string;
-  enhancedTranscript?: string;
-}
-
 function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -179,17 +170,9 @@ function HomeContent() {
     window.dispatchEvent(event);
   };
 
-  const handleTranscriptionDelete = (deletedTranscription: Transcription) => {
-    if (videoId === deletedTranscription.videoId) {
-      resetTranscript();
-      resetVideo();
-      setIsLoadedTranscription(false);
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
-      <Header onOpenTerms={() => setIsTermsDialogOpen(true)} />
+      <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Welcome Section */}
@@ -303,7 +286,6 @@ function HomeContent() {
                   onSave={handleSave}
                   onTranscriptionNameChange={setTranscriptionName}
                   onTranscriptChange={setTranscript}
-                  onDelete={handleTranscriptionDelete}
                 />
               </Card>
             ) : null}

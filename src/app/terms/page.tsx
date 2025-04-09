@@ -1,7 +1,6 @@
 "use client";
 
 import { Header } from "@/components/Header";
-import { Card } from "@/components/ui/card";
 import { SavedTermsProvider } from "@/contexts/SavedTermsContext";
 import { Sidebar } from "@/components/TermsSidebar";
 

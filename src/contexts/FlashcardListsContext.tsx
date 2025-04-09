@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { useSavedTerms } from "./SavedTermsContext";
 
 interface FlashcardList {
   id: string;
