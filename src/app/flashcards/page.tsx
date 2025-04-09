@@ -31,7 +31,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { cn, isAndroid } from "@/lib/utils";
 import Link from "next/link";
 
 export default function FlashcardsPage() {
@@ -259,8 +259,17 @@ export default function FlashcardsPage() {
                   </div>
 
                   <Card
-                    className="aspect-[3/2] flex flex-col p-8 select-none cursor-pointer"
+                    className={cn(
+                      "aspect-[3/2] flex flex-col p-8 select-none",
+                      isAndroid() ? "touch-manipulation" : "cursor-pointer"
+                    )}
                     onClick={() => setIsFlipped(!isFlipped)}
+                    onTouchStart={(e) => {
+                      if (isAndroid()) {
+                        e.preventDefault();
+                        setIsFlipped(!isFlipped);
+                      }
+                    }}
                   >
                     <div className="flex-1 flex items-center justify-center">
                       <div className="space-y-4 text-center">

@@ -131,3 +131,8 @@ export function calculateTooltipPosition(
 
   return { x, y, placement };
 }
+
+export function isAndroid() {
+  if (typeof window === "undefined") return false;
+  return /Android/i.test(navigator.userAgent);
+}
