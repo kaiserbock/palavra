@@ -1,4 +1,13 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import {
+  PHRASE_BOUNDARY_REGEX,
+  WORD_BOUNDARY_REGEX,
+  collectTextNodes,
+  findBoundaries,
+  calculateAbsolutePosition,
+  getTouchCoordinates,
+  createAndApplySelection,
+} from "@/lib/selectionUtils";
 
 export interface Selection {
   text: string;
@@ -10,123 +19,12 @@ interface UseTextSelectionProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-interface TextNodeInfo {
-  node: Text;
-  start: number;
-  end: number;
-}
-
-// Regex patterns for text boundaries
-const PHRASE_BOUNDARY_REGEX = /[.!?。！？\n\r]/;
-const WORD_BOUNDARY_REGEX =
-  /[\s,.!?;:'"()[\]{}<>。！？、，；：""''「」『』（）［］｛｝]/;
-
-// Pure function to collect all text nodes and their offsets
-function collectTextNodes(container: HTMLDivElement): {
-  textNodes: Text[];
-  nodeOffsets: TextNodeInfo[];
-  fullText: string;
-} {
-  const textNodes: Text[] = [];
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    null
-  );
-
-  let node: Text | null = walker.firstChild() as Text;
-  while (node) {
-    textNodes.push(node);
-    node = walker.nextNode() as Text;
-  }
-
-  // Combine all text content
-  let fullText = "";
-  const nodeOffsets: TextNodeInfo[] = [];
-  let currentOffset = 0;
-
-  textNodes.forEach((node) => {
-    const text = node.textContent || "";
-    nodeOffsets.push({
-      node,
-      start: currentOffset,
-      end: currentOffset + text.length,
-    });
-    fullText += text;
-    currentOffset += text.length;
-  });
-
-  return { textNodes, nodeOffsets, fullText };
-}
-
-// Pure function to find text boundaries (word or phrase)
-function findBoundaries(
-  text: string,
-  startPos: number,
-  boundaryRegex: RegExp,
-  isPhraseLevel: boolean = false
-): { startOffset: number; endOffset: number } {
-  let startOffset = startPos;
-  let endOffset = startPos;
-
-  // Find start of text unit
-  for (let i = startPos; i > 0; i--) {
-    if (boundaryRegex.test(text[i - 1])) {
-      startOffset = i;
-      break;
-    }
-    startOffset = i - 1;
-  }
-
-  // Find end of text unit
-  for (let i = startPos; i < text.length; i++) {
-    if (boundaryRegex.test(text[i])) {
-      endOffset = i + (isPhraseLevel ? 1 : 0); // Include punctuation for phrases
-      break;
-    }
-    endOffset = i + 1;
-  }
-
-  return { startOffset, endOffset };
-}
-
-// Pure function to calculate absolute position in content
-function calculateAbsolutePosition(
-  range: Range,
-  container: HTMLDivElement
-): number {
-  const preSelectionRange = range.cloneRange();
-  preSelectionRange.selectNodeContents(container);
-  preSelectionRange.setEnd(range.startContainer, range.startOffset);
-  return preSelectionRange.toString().length;
-}
-
 export function useTextSelection({ containerRef }: UseTextSelectionProps) {
   const [selection, setSelection] = useState<Selection | null>(null);
-
-  // Helper function to apply a selection and update state
-  const applySelection = useCallback(
-    (range: Range, selectedText: string, startPos: number, endPos: number) => {
-      const sel = window.getSelection();
-      if (!sel) return;
-
-      sel.removeAllRanges();
-      sel.addRange(range);
-
-      setSelection({
-        text: selectedText,
-        range,
-        position: {
-          start: startPos,
-          end: endPos,
-        },
-      });
-    },
-    []
-  );
+  const [isSelecting, setIsSelecting] = useState(false);
 
   const selectPhrase = useCallback(
-    (event: MouseEvent) => {
+    (event: MouseEvent | TouchEvent) => {
       const container = containerRef.current;
       if (!container) return;
 
@@ -134,7 +32,11 @@ export function useTextSelection({ containerRef }: UseTextSelectionProps) {
       const { nodeOffsets, fullText } = collectTextNodes(container);
 
       // Get the click position
-      const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+      const coords = "touches" in event ? getTouchCoordinates(event) : event;
+      const range = document.caretRangeFromPoint(
+        coords.clientX,
+        coords.clientY
+      );
       if (!range) return;
 
       // Find the global offset for the click position
@@ -168,24 +70,40 @@ export function useTextSelection({ containerRef }: UseTextSelectionProps) {
 
       if (!startNodeInfo || !endNodeInfo) return;
 
-      // Create the range
-      const newRange = document.createRange();
-      newRange.setStart(startNodeInfo.node, startOffset - startNodeInfo.start);
-      newRange.setEnd(endNodeInfo.node, endOffset - endNodeInfo.start);
+      const result = createAndApplySelection(
+        selectedPhrase,
+        startNodeInfo.node,
+        endNodeInfo.node,
+        startOffset - startNodeInfo.start,
+        endOffset - endNodeInfo.start,
+        container
+      );
 
-      // Apply the selection
-      applySelection(newRange, selectedPhrase, startOffset, endOffset);
+      if (result) {
+        setSelection({
+          text: selectedPhrase,
+          range: result.range,
+          position: {
+            start: result.start,
+            end: result.end,
+          },
+        });
+      }
     },
-    [containerRef, applySelection]
+    [containerRef]
   );
 
   const selectWord = useCallback(
-    (event: MouseEvent) => {
+    (event: MouseEvent | TouchEvent) => {
       const container = containerRef.current;
       if (!container) return;
 
       // Get the click position
-      const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+      const coords = "touches" in event ? getTouchCoordinates(event) : event;
+      const range = document.caretRangeFromPoint(
+        coords.clientX,
+        coords.clientY
+      );
       if (!range || !container.contains(range.startContainer)) return;
 
       // Get the text node at the click position
@@ -208,23 +126,27 @@ export function useTextSelection({ containerRef }: UseTextSelectionProps) {
       const selectedWord = text.slice(startOffset, endOffset).trim();
       if (!selectedWord) return;
 
-      // Create the range
-      const newRange = document.createRange();
-      newRange.setStart(textNode, startOffset);
-      newRange.setEnd(textNode, endOffset);
-
-      // Calculate absolute position
-      const start = calculateAbsolutePosition(newRange, container);
-
-      // Apply the selection
-      applySelection(
-        newRange,
+      const result = createAndApplySelection(
         selectedWord,
-        start,
-        start + selectedWord.length
+        textNode,
+        textNode,
+        startOffset,
+        endOffset,
+        container
       );
+
+      if (result) {
+        setSelection({
+          text: selectedWord,
+          range: result.range,
+          position: {
+            start: result.start,
+            end: result.end,
+          },
+        });
+      }
     },
-    [containerRef, applySelection]
+    [containerRef]
   );
 
   const selectText = useCallback(() => {
@@ -247,8 +169,6 @@ export function useTextSelection({ containerRef }: UseTextSelectionProps) {
 
     if (text) {
       const start = calculateAbsolutePosition(range, container);
-
-      // Apply the selection
       setSelection({
         text,
         range,
@@ -259,6 +179,129 @@ export function useTextSelection({ containerRef }: UseTextSelectionProps) {
       });
     }
   }, [containerRef]);
+
+  const handleSelectionStart = useCallback(
+    (event: TouchEvent | MouseEvent) => {
+      setIsSelecting(true);
+      const container = containerRef.current;
+      if (!container) return;
+
+      const coords = "touches" in event ? getTouchCoordinates(event) : event;
+      const range = document.caretRangeFromPoint(
+        coords.clientX,
+        coords.clientY
+      );
+      if (!range) return;
+
+      // For mobile, we want to start with word selection
+      if ("touches" in event) {
+        const textNode = range.startContainer;
+        if (!(textNode instanceof Text)) return;
+
+        const text = textNode.textContent || "";
+        if (!text.trim()) return;
+
+        const clickOffset = range.startOffset;
+        const { startOffset, endOffset } = findBoundaries(
+          text,
+          clickOffset,
+          WORD_BOUNDARY_REGEX
+        );
+
+        const selectedWord = text.slice(startOffset, endOffset).trim();
+        if (!selectedWord) return;
+
+        const result = createAndApplySelection(
+          selectedWord,
+          textNode,
+          textNode,
+          startOffset,
+          endOffset,
+          container
+        );
+
+        if (result) {
+          setSelection({
+            text: selectedWord,
+            range: result.range,
+            position: {
+              start: result.start,
+              end: result.end,
+            },
+          });
+        }
+      }
+    },
+    [containerRef]
+  );
+
+  const handleSelectionMove = useCallback(
+    (event: TouchEvent | MouseEvent) => {
+      if (!isSelecting) return;
+      const container = containerRef.current;
+      if (!container) return;
+
+      const coords = "touches" in event ? getTouchCoordinates(event) : event;
+      const range = document.caretRangeFromPoint(
+        coords.clientX,
+        coords.clientY
+      );
+      if (!range) return;
+
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+
+      const currentRange = sel.getRangeAt(0);
+      currentRange.setEnd(range.startContainer, range.startOffset);
+
+      const text = currentRange.toString().trim();
+      if (text) {
+        const start = calculateAbsolutePosition(currentRange, container);
+        setSelection({
+          text,
+          range: currentRange,
+          position: {
+            start,
+            end: start + text.length,
+          },
+        });
+      }
+    },
+    [containerRef, isSelecting]
+  );
+
+  const handleSelectionEnd = useCallback(() => {
+    setIsSelecting(false);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Add both mouse and touch event listeners
+    container.addEventListener("mousedown", handleSelectionStart);
+    container.addEventListener("touchstart", handleSelectionStart);
+    container.addEventListener("mousemove", handleSelectionMove);
+    container.addEventListener("touchmove", handleSelectionMove);
+    container.addEventListener("mouseup", handleSelectionEnd);
+    container.addEventListener("touchend", handleSelectionEnd);
+    container.addEventListener("mouseleave", handleSelectionEnd);
+
+    return () => {
+      container.removeEventListener("mousedown", handleSelectionStart);
+      container.removeEventListener("touchstart", handleSelectionStart);
+      container.removeEventListener("mousemove", handleSelectionMove);
+      container.removeEventListener("touchmove", handleSelectionMove);
+      container.removeEventListener("mouseup", handleSelectionEnd);
+      container.removeEventListener("touchend", handleSelectionEnd);
+      container.removeEventListener("mouseleave", handleSelectionEnd);
+    };
+  }, [
+    containerRef,
+    handleSelectionStart,
+    handleSelectionMove,
+    handleSelectionEnd,
+  ]);
 
   const clearSelection = useCallback(() => {
     setSelection(null);
