@@ -4,7 +4,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Sidebar } from "@/components/TermsSidebar";
+import { Sidebar } from "@/components/terms/TermsSidebar";
 
 interface TermsDialogProps {
   open: boolean;

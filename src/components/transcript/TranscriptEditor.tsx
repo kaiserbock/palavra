@@ -1,5 +1,5 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TextContent } from "@/components/TextContent";
+import { TextContent } from "@/components/common/TextContent";
 import { Textarea } from "@/components/ui/textarea";
 
 interface TranscriptEditorProps {

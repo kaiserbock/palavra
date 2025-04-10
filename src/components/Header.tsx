@@ -5,6 +5,7 @@ import {
   Menu,
   User,
   LogOut,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSavedTerms } from "@/contexts/SavedTermsContext";
@@ -81,6 +82,14 @@ function MobileMenu() {
               <ScrollText className="h-5 w-5" />
               <span>Flashcards</span>
             </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-12 px-4"
+              onClick={() => router.push("/texts")}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>Custom Texts</span>
+            </Button>
           </div>
 
           {/* Footer Section */}
@@ -142,6 +151,15 @@ function DesktopNav() {
         >
           <ScrollText className="h-4 w-4" />
           <span>Flashcards</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-2"
+          onClick={() => router.push("/texts")}
+        >
+          <BookOpen className="h-4 w-4" />
+          <span>Custom Texts</span>
         </Button>
       </div>
       <div className="flex items-center gap-2">

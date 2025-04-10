@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { DeleteTranscriptionDialog } from "../DeleteTranscriptionDialog";
+import { DeleteTranscriptionDialog } from "./DeleteTranscriptionDialog";
 import { TranscriptionCard } from "./TranscriptionCard";
 import type { Transcription } from "@/types/transcription";
 import { generateTermsList } from "@/lib/utils";

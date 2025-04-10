@@ -18,11 +18,11 @@ export function useTermSelection(onClearSelection?: () => void) {
   const [isSelecting, setIsSelecting] = useState(false);
 
   // Helper function to handle the optional onClearSelection callback
-  const handleClearSelection = () => {
+  const handleClearSelection = useCallback(() => {
     if (onClearSelection) {
       onClearSelection();
     }
-  };
+  }, [onClearSelection]);
 
   const handleTermClick = useCallback(
     (

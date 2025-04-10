@@ -109,7 +109,7 @@ function escapeRegExp(string: string) {
 export function calculateTooltipPosition(
   targetRect: DOMRect,
   tooltipHeight: number,
-  containerElement: HTMLDivElement | null
+  containerElement: HTMLElement | null
 ): TooltipPosition {
   const viewportHeight = window.innerHeight;
   const scrollY = window.scrollY || window.pageYOffset;

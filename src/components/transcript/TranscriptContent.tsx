@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useSavedTerms } from "@/contexts/SavedTermsContext";
 import { generateTermsList } from "@/lib/utils";
@@ -12,8 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { TranscriptHeader } from "./TranscriptHeader";
-import { TranscriptEditor } from "./TranscriptEditor";
+import { ContentEditor } from "../common/ContentEditor";
 
 interface TranscriptContentProps {
   transcript: string;
@@ -48,12 +46,6 @@ export function TranscriptContent({
 }: TranscriptContentProps) {
   const { savedTerms } = useSavedTerms();
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTranscript, setEditedTranscript] = useState(transcript);
-
-  useEffect(() => {
-    setEditedTranscript(transcript);
-  }, [transcript]);
 
   const handleSave = async () => {
     if (!videoId || !videoUrl || !transcriptionName.trim() || !isEnhanced)
@@ -90,9 +82,8 @@ export function TranscriptContent({
     }
   };
 
-  const handleEditSave = async () => {
+  const handleSaveChanges = async (content: string) => {
     if (isLoadedTranscription) {
-      // Save changes to database for saved transcriptions
       try {
         const response = await fetch("/api/transcriptions", {
           method: "POST",
@@ -104,8 +95,8 @@ export function TranscriptContent({
             url: videoUrl,
             name: transcriptionName.trim(),
             language: currentLanguage,
-            enhancedTranscript: editedTranscript,
-            terms: generateTermsList(editedTranscript, savedTerms),
+            enhancedTranscript: content,
+            terms: generateTermsList(content, savedTerms),
           }),
         });
 
@@ -117,48 +108,26 @@ export function TranscriptContent({
       } catch (error) {
         console.error("Error saving changes:", error);
         toast.error("Failed to save changes");
-        return;
+        throw error;
       }
     }
-
-    onTranscriptChange(editedTranscript);
-    setIsEditing(false);
-  };
-
-  const handleEditCancel = () => {
-    setEditedTranscript(transcript);
-    setIsEditing(false);
   };
 
   return (
     <>
-      <Card className="h-full flex flex-col border-0 sm:border gap-2 py-0 md:py-4 overflow-hidden w-full">
-        <TranscriptHeader
-          transcriptionName={transcriptionName}
-          isLoadedTranscription={isLoadedTranscription}
-          isEnhanced={isEnhanced}
-          isEnhancing={isEnhancing}
-          isEditing={isEditing}
-          transcript={transcript}
-          onEdit={() => setIsEditing(true)}
-          onEnhance={onEnhance}
-          onEditSave={handleEditSave}
-          onEditCancel={handleEditCancel}
-          onSave={() => setIsSaveDialogOpen(true)}
-          onClose={onClose}
-        />
-        <CardContent className="p-0 flex-1 min-h-0">
-          <TranscriptEditor
-            transcript={transcript}
-            currentLanguage={currentLanguage}
-            isEnhancing={isEnhancing}
-            isEditing={isEditing}
-            isLoadedTranscription={isLoadedTranscription}
-            editedTranscript={editedTranscript}
-            onEditChange={setEditedTranscript}
-          />
-        </CardContent>
-      </Card>
+      <ContentEditor
+        title={transcriptionName}
+        content={transcript}
+        language={currentLanguage}
+        isLoaded={isLoadedTranscription}
+        isEnhanced={isEnhanced}
+        isEnhancing={isEnhancing}
+        onEnhance={onEnhance}
+        onSave={() => setIsSaveDialogOpen(true)}
+        onClose={onClose}
+        onContentChange={onTranscriptChange}
+        onSaveChanges={handleSaveChanges}
+      />
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
         <DialogContent>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SavedTermsProvider } from "@/contexts/SavedTermsContext";
-import { Sidebar } from "@/components/TermsSidebar";
+import { Sidebar } from "@/components/terms/TermsSidebar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus } from "lucide-react";
 import { CreateTermDialog } from "@/components/terms/CreateTermDialog";
