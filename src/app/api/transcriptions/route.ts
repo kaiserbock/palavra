@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const session = (await getServerSession(authOptions)) as Session | null;
     const userId = session?.user?.id;
@@ -79,23 +79,6 @@ export async function GET(request: Request) {
     }
 
     await getDbConnection();
-    const { searchParams } = new URL(request.url);
-    const videoId = searchParams.get("videoId");
-
-    if (videoId) {
-      const transcription = await Transcription.findOne({
-        videoId,
-        userId,
-      }).lean();
-      if (!transcription) {
-        return NextResponse.json(
-          { error: "Transcription not found" },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json(transcription);
-    }
-
     const transcriptions = await Transcription.find({ userId })
       .sort({ createdAt: -1 })
       .lean();
